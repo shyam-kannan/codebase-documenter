@@ -6,6 +6,7 @@ interface JobStatusProps {
   jobId: string;
 }
 
+
 interface Job {
   id: string;
   github_url: string;
@@ -15,6 +16,7 @@ interface Job {
   created_at: string;
   updated_at: string;
 }
+
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
@@ -69,10 +71,11 @@ export default function JobStatus({ jobId }: JobStatusProps) {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 rounded-lg w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded-lg w-full"></div>
+          <div className="h-4 bg-gray-200 rounded-lg w-2/3"></div>
         </div>
       </div>
     );
@@ -80,8 +83,8 @@ export default function JobStatus({ jobId }: JobStatusProps) {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-5 py-4 rounded-xl text-center">
           {error}
         </div>
       </div>
@@ -93,68 +96,47 @@ export default function JobStatus({ jobId }: JobStatusProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-        Job Status
-      </h2>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Job ID
-          </label>
-          <p className="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-700 p-2 rounded">
-            {job.id}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Repository
-          </label>
-          <p className="text-sm text-gray-600 dark:text-gray-400 break-all">
-            {job.github_url}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Status
-          </label>
+    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl mx-auto">
+      <div className="space-y-6">
+        <div className="text-center pb-6 border-b-2 border-gray-100">
           <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+            className={`inline-flex items-center px-6 py-3 rounded-full text-lg font-semibold shadow-md ${
               statusColors[job.status]
             }`}
           >
-            <span className="mr-2">{statusIcons[job.status]}</span>
+            <span className="mr-3 text-2xl">{statusIcons[job.status]}</span>
             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
           </span>
         </div>
 
+        <div>
+          <label className="block text-sm font-semibold text-gray-500 mb-2">
+            Repository
+          </label>
+          <p className="text-lg text-gray-900 break-all font-medium">
+            {job.github_url}
+          </p>
+        </div>
+
         {job.error_message && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-semibold text-gray-500 mb-2">
               Error Message
             </label>
-            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded">
+            <p className="text-sm text-red-600 bg-red-50 p-4 rounded-xl border-2 border-red-200">
               {job.error_message}
             </p>
           </div>
         )}
 
         {job.status === "completed" && job.documentation_url && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Documentation
-            </label>
+          <div className="pt-4">
             <a
-              href={job.documentation_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+              href={`/documentation/${job.id}`}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
             >
               <svg
-                className="w-5 h-5 mr-2"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -168,28 +150,27 @@ export default function JobStatus({ jobId }: JobStatusProps) {
               </svg>
               View Documentation
             </a>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 break-all">
-              {job.documentation_url}
-            </p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Created At
-            </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {new Date(job.created_at).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Updated At
-            </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {new Date(job.updated_at).toLocaleString()}
-            </p>
+        <div className="pt-4 border-t-2 border-gray-100">
+          <div className="grid grid-cols-2 gap-6 text-sm">
+            <div>
+              <label className="block font-semibold text-gray-500 mb-1">
+                Created
+              </label>
+              <p className="text-gray-700">
+                {new Date(job.created_at).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <label className="block font-semibold text-gray-500 mb-1">
+                Updated
+              </label>
+              <p className="text-gray-700">
+                {new Date(job.updated_at).toLocaleString()}
+              </p>
+            </div>
           </div>
         </div>
       </div>
