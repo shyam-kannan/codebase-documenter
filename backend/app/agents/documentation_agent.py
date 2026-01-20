@@ -11,6 +11,7 @@ from app.tools.clone_repository import clone_repository, cleanup_repository
 from app.tools.file_scanner import scan_directory, get_code_files
 from app.tools.code_analyzer import analyze_multiple_files
 from app.tools.doc_generator import generate_documentation
+from app.core.s3 import upload_to_s3, check_s3_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class AgentState(TypedDict):
     stats: Optional[Dict[str, Any]]
     code_analysis: Optional[Dict[str, Any]]
     documentation: Optional[str]
+    documentation_url: Optional[str]
     error: Optional[str]
     current_step: str
     status: str
@@ -222,7 +224,7 @@ class DocumentationAgent:
 
     def _save_step(self, state: AgentState) -> AgentState:
         """
-        Step 5: Save documentation (placeholder for S3 upload).
+        Step 5: Save documentation to S3 and local backup.
 
         Args:
             state: Current agent state
@@ -236,16 +238,29 @@ class DocumentationAgent:
         logger.info(f"[Job {state['job_id']}] Step 5: Saving documentation")
         state["current_step"] = "saving"
 
-        # TODO: Implement S3 upload or database storage
-        # For now, save to local file as placeholder
         try:
+            # Save to local file first (as backup)
             output_path = Path("/tmp/docs") / f"{state['job_id']}.md"
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(state["documentation"])
 
-            logger.info(f"[Job {state['job_id']}] Saved documentation to {output_path}")
+            logger.info(f"[Job {state['job_id']}] Saved documentation locally to {output_path}")
+
+            # Upload to S3 if configured
+            if check_s3_configuration():
+                logger.info(f"[Job {state['job_id']}] Uploading documentation to S3")
+                s3_url = upload_to_s3(str(output_path), state["job_id"])
+
+                if s3_url:
+                    state["documentation_url"] = s3_url
+                    logger.info(f"[Job {state['job_id']}] Successfully uploaded to S3: {s3_url}")
+                else:
+                    logger.warning(f"[Job {state['job_id']}] S3 upload failed, documentation saved locally only")
+            else:
+                logger.warning(f"[Job {state['job_id']}] S3 not configured, documentation saved locally only")
+
             state["status"] = "completed"
 
         except Exception as e:
@@ -299,6 +314,7 @@ class DocumentationAgent:
             stats=None,
             code_analysis=None,
             documentation=None,
+            documentation_url=None,
             error=None,
             current_step="initializing",
             status="processing",
@@ -312,6 +328,7 @@ class DocumentationAgent:
                 "success": final_state["status"] == "completed",
                 "status": final_state["status"],
                 "documentation": final_state.get("documentation"),
+                "documentation_url": final_state.get("documentation_url"),
                 "error": final_state.get("error"),
                 "metadata": {
                     "repo_metadata": final_state.get("repo_metadata"),

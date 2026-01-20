@@ -11,6 +11,7 @@ interface Job {
   github_url: string;
   status: "pending" | "processing" | "completed" | "failed";
   error_message: string | null;
+  documentation_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -137,6 +138,38 @@ export default function JobStatus({ jobId }: JobStatusProps) {
             </label>
             <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded">
               {job.error_message}
+            </p>
+          </div>
+        )}
+
+        {job.status === "completed" && job.documentation_url && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Documentation
+            </label>
+            <a
+              href={job.documentation_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              View Documentation
+            </a>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 break-all">
+              {job.documentation_url}
             </p>
           </div>
         )}

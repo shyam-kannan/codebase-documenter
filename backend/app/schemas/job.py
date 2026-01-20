@@ -24,6 +24,7 @@ class JobResponse(BaseModel):
     github_url: str
     status: JobStatus
     error_message: str | None = None
+    documentation_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -33,9 +34,10 @@ class JobResponse(BaseModel):
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "github_url": "https://github.com/facebook/react",
-                "status": "pending",
+                "status": "completed",
                 "error_message": None,
+                "documentation_url": "https://my-bucket.s3.us-east-1.amazonaws.com/docs/123e4567-e89b-12d3-a456-426614174000.md",
                 "created_at": "2024-01-19T12:00:00Z",
-                "updated_at": "2024-01-19T12:00:00Z"
+                "updated_at": "2024-01-19T12:05:00Z"
             }
         }

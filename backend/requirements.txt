@@ -20,3 +20,6 @@ anthropic==0.47.0
 langgraph==0.2.59
 langchain-core==0.3.41
 langchain-anthropic==0.3.9
+
+# AWS Integration
+boto3==1.35.86

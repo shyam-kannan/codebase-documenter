@@ -43,6 +43,10 @@ services:
       BACKEND_PORT: ${BACKEND_PORT:-8000}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
     ports:
       - "8000:8000"
     volumes:
@@ -65,6 +69,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://codebase_user:codebase_password@postgres:5432/codebase_db}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
     volumes:
       - ./backend:/app
       - repos_data:/tmp/repos

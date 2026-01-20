@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     # AI/LLM
     ANTHROPIC_API_KEY: str = ""
 
+    # AWS/S3
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    S3_BUCKET_NAME: str = ""
+    AWS_REGION: str = "us-east-1"
+
     class Config:
         env_file = "../.env"
         case_sensitive = True

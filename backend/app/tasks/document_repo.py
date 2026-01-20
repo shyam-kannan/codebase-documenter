@@ -49,7 +49,10 @@ def document_repository(self, job_id: str) -> dict:
         if result["success"]:
             job.status = JobStatus.COMPLETED
             job.error_message = None
+            job.documentation_url = result.get("documentation_url")
             logger.info(f"[Job {job_id}] Documentation generation completed successfully")
+            if job.documentation_url:
+                logger.info(f"[Job {job_id}] Documentation URL: {job.documentation_url}")
         else:
             job.status = JobStatus.FAILED
             job.error_message = result.get("error", "Unknown error occurred")

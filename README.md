@@ -2,13 +2,16 @@
 
 An AI-powered full-stack application that automatically generates comprehensive documentation from GitHub repositories using Claude Sonnet 4, LangGraph workflows, and intelligent code analysis.
 
-## 🎉 Phase 2 Complete - AI Documentation Agent
+## 🎉 Phase 3 Complete - S3 Storage & Documentation Viewer
 
 The system now features:
 - 🤖 **AI-Powered Documentation**: Claude Sonnet 4 generates intelligent, context-aware documentation
 - 🔄 **LangGraph Workflows**: Multi-step agent orchestrates clone → scan → analyze → generate
 - ⚡ **Background Processing**: Celery workers handle jobs asynchronously
 - 📊 **Code Analysis**: Automatic extraction of classes, functions, and structure
+- ☁️ **S3 Cloud Storage**: Documentation automatically uploaded to Amazon S3
+- 🔗 **Public URLs**: Each job gets a shareable documentation link
+- 🎨 **Documentation Viewer**: Beautiful "View Documentation" button in UI
 - 🚀 **Production Ready**: Error handling, logging, and scalable architecture
 
 ## Project Structure
@@ -44,6 +47,7 @@ codebase-documenter/
 - Docker & Docker Compose
 - PostgreSQL 15
 - Redis 7
+- **Amazon S3** (Cloud Storage)
 
 ## Prerequisites
 
@@ -51,6 +55,7 @@ codebase-documenter/
 - Node.js 18+ (for local frontend development)
 - Python 3.11+ (for local backend development)
 - **Anthropic API Key** (for AI documentation generation) - Get one at https://console.anthropic.com/
+- **AWS Account** (for S3 storage - optional but recommended) - Sign up at https://aws.amazon.com/
 
 ## Quick Start
 

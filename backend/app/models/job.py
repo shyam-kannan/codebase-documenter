@@ -18,5 +18,6 @@ class Job(Base):
     github_url = Column(String, unique=True, nullable=False, index=True)
     status = Column(SQLEnum(JobStatus, values_callable=lambda x: [e.value for e in x]), default=JobStatus.PENDING, nullable=False)
     error_message = Column(String, nullable=True)
+    documentation_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
