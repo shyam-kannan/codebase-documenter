@@ -101,6 +101,10 @@ def _build_documentation_prompt(
     Returns:
         Formatted prompt string
     """
+    # Check if this is a large repository
+    total_files = stats.get('total_files', 0)
+    is_large_repo = total_files > 50
+
     prompt = f"""You are a technical documentation expert. Generate comprehensive, well-structured documentation for the following codebase.
 
 # Repository: {repo_name}
@@ -113,51 +117,183 @@ def _build_documentation_prompt(
 - Total Size: {_format_bytes(stats.get('total_size_bytes', 0))}
 
 ## File Structure
-{_format_file_tree(file_tree)}
+{_format_file_tree(file_tree, max_depth=4 if is_large_repo else 10)}
 
 ## Code Analysis
-{_format_code_analysis(code_analysis)}
+{_format_code_analysis(code_analysis, is_large_repo)}
 """
 
     if readme_content:
         prompt += f"""
 ## Existing README
-{readme_content[:2000]}  # Truncate to avoid token limits
+{readme_content[:3000]}
 """
 
     prompt += """
 
 ## Task
-Generate comprehensive documentation for this codebase in markdown format. Include:
+You are creating documentation comprehensive enough that a new engineer could clone the repo and get it running without external help.
 
-1. **Overview**: Brief description of what this codebase does
-2. **Architecture**: High-level architecture and main components
-3. **Key Files**: Description of the most important files and their purposes
-4. **Getting Started**: How to set up and run the project (if apparent from structure)
-5. **Project Structure**: Detailed explanation of the directory structure
-6. **Key Components**: Main classes, functions, and modules with their purposes
-7. **Dependencies**: Notable dependencies and what they're used for
-8. **API/Interfaces**: Public APIs or interfaces if applicable
-9. **Development Notes**: Any important patterns, conventions, or practices
+**CRITICAL: Analyze the repository type and adapt your documentation structure accordingly.**
 
-Format the documentation in clean, readable markdown. Be concise but comprehensive. Focus on helping developers understand the codebase quickly.
+### Core Documentation Structure (ALWAYS INCLUDE):
+
+1. **Overview**
+   - What this project does and its key value proposition
+   - Primary use case or problem it solves
+   - Current status (production-ready, experimental, etc.)
+
+2. **Architecture**
+   - Tech stack summary (languages, frameworks, databases, tools)
+   - High-level system design and how components interact
+   - Key architectural decisions and design patterns used
+   - Data flow and request lifecycle
+
+3. **Getting Started**
+   - Prerequisites (Node.js version, Python version, system requirements, etc.)
+   - Step-by-step installation instructions
+   - First-time setup (database initialization, seed data, etc.)
+   - How to run in development mode
+   - How to verify the setup is working
+
+4. **Environment Variables**
+   - Complete list of every environment variable
+   - What each variable does and why it's needed
+   - Where to obtain API keys or credentials
+   - Example values and format
+   - Note any .env.example file or missing critical env vars
+
+5. **Scripts & Commands**
+   - Explain ALL scripts from package.json, requirements.txt, Makefile, etc.
+   - What each script does and when to use it
+   - Build commands for production
+   - Development commands (watch mode, hot reload, etc.)
+
+6. **Project Structure**
+   - Directory layout with clear explanations
+   - Purpose of each major folder
+   - Where to find specific types of files (components, utils, config, tests, etc.)
+
+7. **Key Files**
+   - List the 5-10 most important files
+   - Brief explanation of each file's purpose
+   - Entry points and configuration files
+
+8. **Core Components/Modules**
+   - Main features and functionality
+   - How major components work together
+   - Business logic organization
+
+9. **Dependencies**
+   - Major libraries and frameworks used
+   - What each dependency does and why it was chosen
+   - Any unusual or noteworthy dependencies
+
+10. **API Documentation** (if applicable)
+    - All endpoints/routes with methods and paths
+    - Request/response formats
+    - Authentication/authorization requirements
+    - Public interfaces or exported functions
+
+11. **Development Patterns**
+    - Code organization conventions
+    - State management approach (Redux, Context, Vuex, etc.)
+    - Styling approach (CSS modules, Tailwind, styled-components, etc.)
+    - Error handling patterns
+    - Any established coding standards
+
+12. **Build & Deployment**
+    - How to build for production
+    - Output artifacts and where they go
+    - Deployment process or platform
+    - Environment-specific configurations
+
+13. **Testing**
+    - How to run tests (if tests exist)
+    - Test structure and organization
+    - Coverage expectations
+    - If NO tests exist, note this clearly
+
+14. **Troubleshooting**
+    - Common setup issues and solutions
+    - Known gotchas or pitfalls
+    - How to debug common problems
+
+15. **Performance Considerations**
+    - Optimizations implemented
+    - Best practices followed
+    - Caching strategies
+    - Any performance-critical sections
+
+### Smart Adaptations Based on Repository Type:
+
+**For Frontend Apps (React, Vue, Angular, etc.):**
+- Emphasize: component architecture, routing, state management, UI patterns
+- Include: page structure, styling approach, asset management
+- Document: component props/interfaces, reusable utilities
+
+**For Backend APIs (Express, FastAPI, Django, etc.):**
+- Emphasize: endpoints, middleware, database schemas, auth flow
+- Include: request/response formats, error handling, validation
+- Document: database models, migration strategy, API versioning
+
+**For Full-Stack Apps:**
+- Clearly separate frontend and backend sections
+- Document: how frontend and backend communicate
+- Include: shared types/interfaces, API contracts
+
+**For Libraries/Packages:**
+- Emphasize: public API, usage examples, exports
+- Include: installation from npm/pip, import statements
+- Document: API reference, common use cases
+
+**For Mobile Apps:**
+- Include: platform-specific setup (iOS/Android)
+- Document: build configurations, signing, deployment
+- Include: device testing, emulator setup
+
+### Special Guidelines:
+
+**For Large Repos (100+ files):**
+- Focus on high-level architecture and patterns
+- Group similar files (e.g., "50+ API route handlers in /api/routes/")
+- Prioritize entry points and core business logic
+- Still provide complete setup/deployment instructions
+- Focus on "what" and "why" over line-by-line "how"
+
+**AI Decision Making:**
+- Identify the repository type and adapt structure accordingly
+- Highlight unique or interesting architectural decisions
+- Flag missing critical files (e.g., "⚠️ No README found", "⚠️ No .env.example provided")
+- Note if common best practices are missing (tests, error handling, etc.)
+- Suggest improvements where obvious gaps exist
+
+**Quality Standards:**
+- Be specific and actionable, not vague
+- Include actual command examples, not placeholders
+- Explain WHY things are done, not just WHAT they are
+- Make it comprehensive enough for complete self-service setup
+- Use clear headings and formatting for easy navigation
+
+Format the documentation in clean, readable markdown with proper heading hierarchy.
 """
 
     return prompt
 
 
-def _format_file_tree(tree: Dict[str, Any], indent: int = 0) -> str:
+def _format_file_tree(tree: Dict[str, Any], indent: int = 0, max_depth: int = 10) -> str:
     """
     Format file tree for display in prompt.
 
     Args:
         tree: File tree structure
         indent: Current indentation level
+        max_depth: Maximum depth to traverse
 
     Returns:
         Formatted string representation
     """
-    if not tree:
+    if not tree or indent > max_depth:
         return ""
 
     lines = []
@@ -165,8 +301,12 @@ def _format_file_tree(tree: Dict[str, Any], indent: int = 0) -> str:
 
     if tree.get("type") == "directory":
         lines.append(f"{prefix}- {tree.get('name')}/")
-        for child in tree.get("children", [])[:50]:  # Limit children to avoid token overflow
-            lines.append(_format_file_tree(child, indent + 1))
+        # Limit children based on depth
+        max_children = 30 if indent < 2 else 15
+        for child in tree.get("children", [])[:max_children]:
+            child_str = _format_file_tree(child, indent + 1, max_depth)
+            if child_str:
+                lines.append(child_str)
     else:
         size = tree.get("size", 0)
         lines.append(f"{prefix}- {tree.get('name')} ({_format_bytes(size)})")
@@ -174,12 +314,13 @@ def _format_file_tree(tree: Dict[str, Any], indent: int = 0) -> str:
     return "\n".join(lines)
 
 
-def _format_code_analysis(analysis: Dict[str, Any]) -> str:
+def _format_code_analysis(analysis: Dict[str, Any], is_large_repo: bool = False) -> str:
     """
     Format code analysis results for prompt.
 
     Args:
         analysis: Code analysis results
+        is_large_repo: Whether this is a large repository (50+ files)
 
     Returns:
         Formatted string
@@ -187,39 +328,78 @@ def _format_code_analysis(analysis: Dict[str, Any]) -> str:
     if not analysis or not analysis.get("files"):
         return "No code analysis available."
 
-    lines = ["Key code files analyzed:"]
+    files = analysis.get("files", [])
 
-    # Show up to 10 most important files
-    for file_info in analysis.get("files", [])[:10]:
-        file_path = file_info.get("path", "unknown")
-        file_analysis = file_info.get("analysis", {})
+    if is_large_repo:
+        # For large repos, provide a high-level summary grouped by type
+        lines = ["Code structure summary (grouped by component type):"]
 
-        if not file_analysis.get("success"):
-            continue
+        # Group files by directory/component
+        components = {}
+        for file_info in files[:20]:  # Limit to first 20 files
+            file_path = file_info.get("path", "unknown")
+            # Extract component name from path (first directory)
+            parts = file_path.split("/")
+            component = parts[0] if len(parts) > 1 else "root"
 
-        lines.append(f"\n### {file_path}")
+            if component not in components:
+                components[component] = {
+                    "files": [],
+                    "classes": [],
+                    "functions": []
+                }
 
-        # Classes
-        classes = file_analysis.get("classes", [])
-        if classes:
-            lines.append(f"  Classes: {', '.join([c.get('name', '') for c in classes[:5]])}")
+            components[component]["files"].append(parts[-1])
 
-        # Functions
-        functions = file_analysis.get("functions", [])
-        if functions:
-            lines.append(f"  Functions: {', '.join([f.get('name', '') for f in functions[:10]])}")
+            file_analysis = file_info.get("analysis", {})
+            if file_analysis.get("success"):
+                classes = file_analysis.get("classes", [])
+                functions = file_analysis.get("functions", [])
+                components[component]["classes"].extend([c.get('name', '') for c in classes[:3]])
+                components[component]["functions"].extend([f.get('name', '') for f in functions[:3]])
 
-        # Imports
-        imports = file_analysis.get("imports", [])
-        if imports:
-            import_summary = []
-            for imp in imports[:5]:
-                if imp.get("type") == "import":
-                    import_summary.append(imp.get("module", ""))
-                elif imp.get("type") == "from_import":
-                    import_summary.append(f"{imp.get('module', '')}.{imp.get('name', '')}")
-            if import_summary:
-                lines.append(f"  Key Imports: {', '.join(import_summary)}")
+        # Format grouped summary
+        for component, data in list(components.items())[:8]:  # Top 8 components
+            lines.append(f"\n### {component}/")
+            lines.append(f"  Files: {', '.join(data['files'][:5])}")
+            if data['classes']:
+                lines.append(f"  Key Classes: {', '.join(data['classes'][:5])}")
+            if data['functions']:
+                lines.append(f"  Key Functions: {', '.join(data['functions'][:5])}")
+    else:
+        # For smaller repos, show detailed analysis
+        lines = ["Key code files analyzed:"]
+
+        for file_info in files[:15]:  # Show up to 15 files
+            file_path = file_info.get("path", "unknown")
+            file_analysis = file_info.get("analysis", {})
+
+            if not file_analysis.get("success"):
+                continue
+
+            lines.append(f"\n### {file_path}")
+
+            # Classes
+            classes = file_analysis.get("classes", [])
+            if classes:
+                lines.append(f"  Classes: {', '.join([c.get('name', '') for c in classes[:5]])}")
+
+            # Functions
+            functions = file_analysis.get("functions", [])
+            if functions:
+                lines.append(f"  Functions: {', '.join([f.get('name', '') for f in functions[:10]])}")
+
+            # Imports
+            imports = file_analysis.get("imports", [])
+            if imports:
+                import_summary = []
+                for imp in imports[:5]:
+                    if imp.get("type") == "import":
+                        import_summary.append(imp.get("module", ""))
+                    elif imp.get("type") == "from_import":
+                        import_summary.append(f"{imp.get('module', '')}.{imp.get('name', '')}")
+                if import_summary:
+                    lines.append(f"  Key Imports: {', '.join(import_summary)}")
 
     return "\n".join(lines)
 

@@ -195,16 +195,48 @@ class DocumentationAgent:
         # Extract repo name from URL
         repo_name = state["github_url"].rstrip("/").split("/")[-1]
 
-        # Look for README file
+        # Look for important files (README, config files, etc.)
         readme_content = None
+        config_files_content = {}
+
+        # Priority files to read for comprehensive documentation
+        priority_files = {
+            "readme": ["readme.md", "readme.txt", "readme"],
+            "package": ["package.json"],
+            "requirements": ["requirements.txt", "setup.py", "pyproject.toml"],
+            "docker": ["docker-compose.yml", "docker-compose.yaml", "dockerfile"],
+            "config": [".env.example", "config.json", "config.yaml", "config.yml"],
+        }
+
         for file_info in state["file_list"]:
-            if file_info["name"].lower() in ["readme.md", "readme.txt", "readme"]:
+            file_name = file_info["name"].lower()
+
+            # Read README
+            if not readme_content and file_name in priority_files["readme"]:
                 try:
                     with open(file_info["path"], "r", encoding="utf-8") as f:
                         readme_content = f.read()
-                    break
+                    logger.info(f"Found README: {file_info['name']}")
                 except Exception as e:
                     logger.warning(f"Could not read README: {e}")
+
+            # Read config files
+            for category, filenames in priority_files.items():
+                if category != "readme" and file_name in filenames:
+                    try:
+                        with open(file_info["path"], "r", encoding="utf-8") as f:
+                            content = f.read(5000)  # Limit to 5000 chars
+                            config_files_content[file_info["name"]] = content
+                        logger.info(f"Found config file: {file_info['name']}")
+                    except Exception as e:
+                        logger.warning(f"Could not read {file_info['name']}: {e}")
+
+        # Append config files content to README for context
+        if config_files_content:
+            config_summary = "\n\n## Configuration Files Found\n"
+            for filename, content in config_files_content.items():
+                config_summary += f"\n### {filename}\n```\n{content}\n```\n"
+            readme_content = (readme_content or "") + config_summary
 
         # Generate documentation
         result = generate_documentation(

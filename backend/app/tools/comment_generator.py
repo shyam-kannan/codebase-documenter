@@ -3,6 +3,7 @@ Tool for generating inline comments for code files using Claude API.
 """
 import logging
 from typing import Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from anthropic import Anthropic
 from app.core.config import settings
 
@@ -30,16 +31,18 @@ def generate_inline_comments(file_path: str, file_content: str, language: str) -
 
         client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
-        prompt = f"""You are a helpful coding assistant. Add inline comments to the following {language} code to explain what it does.
+        prompt = f"""You are an expert code documentation assistant. Add strategic, high-value comments to this {language} code.
 
-Guidelines for comments:
-1. Add comments above functions/methods explaining their purpose, parameters, and return values
-2. Add inline comments for complex logic or non-obvious code sections
-3. Keep comments concise and meaningful
-4. Don't over-comment obvious code
-5. Use the appropriate comment syntax for {language}
-6. Preserve all original code exactly as-is
-7. Only add comments, do not modify the code itself
+CRITICAL RULES:
+1. DO NOT comment on: imports, simple variable declarations, basic getters/setters, or obvious code
+2. FOCUS ON: complex logic, business rules, algorithms, non-obvious decisions, edge cases, and WHY (not what)
+3. Add comprehensive docstrings for functions/classes: purpose, parameters, return values, side effects, exceptions
+4. Only add inline comments for tricky/non-obvious parts that would confuse readers
+5. Skip trivial comments like "this imports X" or "set variable to Y"
+6. Explain the reasoning and intent, not just what the code does
+7. Keep comments concise but meaningful
+8. Use appropriate comment syntax for {language}
+9. Preserve all original code exactly as-is - DO NOT modify the code itself
 
 File: {file_path}
 
@@ -81,13 +84,15 @@ Return ONLY the commented code, with no additional explanation or markdown forma
 
 
 def generate_comments_for_multiple_files(
-    files: List[Dict[str, str]]
+    files: List[Dict[str, str]],
+    max_workers: int = 4
 ) -> Dict[str, Any]:
     """
-    Generate inline comments for multiple code files.
+    Generate inline comments for multiple code files in parallel.
 
     Args:
         files: List of dicts with 'path', 'content', and 'language' keys
+        max_workers: Maximum number of concurrent API requests (default: 4)
 
     Returns:
         Dict with results for each file
@@ -99,28 +104,49 @@ def generate_comments_for_multiple_files(
         "failed": 0,
     }
 
-    for file_info in files:
-        logger.info(f"Generating comments for {file_info['path']}")
+    # Process files in parallel using ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_file = {
+            executor.submit(
+                generate_inline_comments,
+                file_info["path"],
+                file_info["content"],
+                file_info.get("language", "python")
+            ): file_info
+            for file_info in files
+        }
 
-        result = generate_inline_comments(
-            file_path=file_info["path"],
-            file_content=file_info["content"],
-            language=file_info.get("language", "python"),
-        )
+        # Collect results as they complete
+        for future in as_completed(future_to_file):
+            file_info = future_to_file[future]
+            try:
+                result = future.result()
 
-        if result["success"]:
-            results["files"].append({
-                "path": file_info["path"],
-                "commented_code": result["commented_code"],
-                "original_code": result["original_code"],
-            })
-            results["successful"] += 1
-        else:
-            results["files"].append({
-                "path": file_info["path"],
-                "error": result["error"],
-            })
-            results["failed"] += 1
+                if result["success"]:
+                    results["files"].append({
+                        "path": file_info["path"],
+                        "commented_code": result["commented_code"],
+                        "original_code": result["original_code"],
+                    })
+                    results["successful"] += 1
+                    logger.info(f"Successfully commented {file_info['path']}")
+                else:
+                    results["files"].append({
+                        "path": file_info["path"],
+                        "error": result["error"],
+                    })
+                    results["failed"] += 1
+                    logger.warning(f"Failed to comment {file_info['path']}: {result.get('error')}")
+
+            except Exception as e:
+                error_msg = f"Unexpected error processing {file_info['path']}: {str(e)}"
+                logger.error(error_msg)
+                results["files"].append({
+                    "path": file_info["path"],
+                    "error": error_msg,
+                })
+                results["failed"] += 1
 
     results["success"] = results["failed"] == 0
 

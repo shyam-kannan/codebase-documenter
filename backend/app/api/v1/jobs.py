@@ -142,6 +142,34 @@ async def list_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
     jobs = db.query(Job).order_by(Job.created_at.desc()).offset(skip).limit(limit).all()
     return jobs
 
+
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(job_id: UUID, db: Session = Depends(get_db)):
+    """
+    Delete a documentation job.
+
+    - **job_id**: The UUID of the job to delete
+
+    This endpoint deletes a job from the database. The associated files in S3
+    (documentation and commented code) are not automatically deleted to preserve
+    data integrity and avoid accidental data loss.
+    """
+    # Get the job
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job with ID {job_id} not found"
+        )
+
+    # Delete the job
+    db.delete(job)
+    db.commit()
+
+    logger.info(f"Deleted job {job_id}")
+    return None
+
+
 @router.get("/jobs/{job_id}/documentation")
 async def get_documentation(job_id: UUID, db: Session = Depends(get_db)):
     """
