@@ -44,6 +44,7 @@ export default function SavedDocumentationPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingJobs, setDeletingJobs] = useState<Set<string>>(new Set());
+  const [generatingComments, setGeneratingComments] = useState<Set<string>>(new Set());
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -84,7 +85,23 @@ export default function SavedDocumentationPage() {
     };
 
     fetchJobs();
-  }, []);
+
+    // Check if any job is pending or processing
+    const hasActiveJobs = () => {
+      return Object.values(groupedJobs).some(jobs =>
+        jobs.some(job => job.status === "pending" || job.status === "processing")
+      );
+    };
+
+    // Poll every 5 seconds if there are active jobs
+    const interval = setInterval(() => {
+      if (hasActiveJobs()) {
+        fetchJobs();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [groupedJobs]);
 
   // Filter repositories based on search query
   const filteredRepos = Object.entries(groupedJobs).filter(([githubUrl]) =>
@@ -144,6 +161,51 @@ export default function SavedDocumentationPage() {
       console.error("Failed to delete jobs:", err);
       setDeletingJobs(new Set());
       alert("Failed to delete documentation. Please try again.");
+    }
+  };
+
+  const handleGenerateComments = async (jobId: string) => {
+    setGeneratingComments(new Set([...generatingComments, jobId]));
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/api/v1/jobs/${jobId}/add-comments`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to trigger comment generation");
+      }
+
+      // Refresh the job list to show updated status
+      const jobsResponse = await fetch(`${apiUrl}/api/v1/jobs?limit=1000`);
+      if (jobsResponse.ok) {
+        const jobs: Job[] = await jobsResponse.json();
+
+        // Re-group jobs
+        const grouped: GroupedJobs = {};
+        jobs.forEach((job) => {
+          if (!grouped[job.github_url]) {
+            grouped[job.github_url] = [];
+          }
+          grouped[job.github_url].push(job);
+        });
+
+        // Sort each group by created_at (newest first)
+        Object.keys(grouped).forEach((url) => {
+          grouped[url].sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        });
+
+        setGroupedJobs(grouped);
+      }
+
+      setGeneratingComments(new Set());
+    } catch (err) {
+      console.error("Failed to generate comments:", err);
+      setGeneratingComments(new Set());
+      alert("Failed to trigger comment generation. Please try again.");
     }
   };
 
@@ -313,6 +375,7 @@ export default function SavedDocumentationPage() {
                   const hasCommentedCode = latestCompleted?.documentation_url?.includes('/commented/');
                   const hasPR = latestCompleted?.pull_request_url;
                   const isDeleting = deletingJobs.has(latestJob.id);
+                  const isGeneratingComments = latestCompleted ? generatingComments.has(latestCompleted.id) : false;
 
                   return (
                     <div
@@ -396,6 +459,35 @@ export default function SavedDocumentationPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
                               </a>
+                            )}
+
+                            {/* Generate AI Comments Button (if no PR and no commented code yet) */}
+                            {!hasPR && !hasCommentedCode && latestCompleted && (
+                              <button
+                                onClick={() => handleGenerateComments(latestCompleted.id)}
+                                disabled={isGeneratingComments}
+                                className="group flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
+                              >
+                                {isGeneratingComments ? (
+                                  <>
+                                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating Comments...
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Generate AI Comments
+                                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                  </>
+                                )}
+                              </button>
                             )}
 
                             {/* Documentation Button */}

@@ -143,7 +143,7 @@ export default function DocumentationViewer() {
               </button>
             </div>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/saved-documentation")}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow hover:shadow-lg transition-all duration-200 print:hidden"
             >
               <svg
@@ -159,7 +159,7 @@ export default function DocumentationViewer() {
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              Back to Home
+              Back to Saved Docs
             </button>
           </div>
         </div>
