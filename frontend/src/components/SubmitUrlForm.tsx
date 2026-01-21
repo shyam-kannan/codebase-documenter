@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { useSession } from "next-auth/react";
 
 interface SubmitUrlFormProps {
   onJobCreated: (jobId: string) => void;
@@ -14,6 +15,7 @@ interface JobResponse {
 }
 
 export default function SubmitUrlForm({ onJobCreated }: SubmitUrlFormProps) {
+  const { data: session } = useSession();
   const [githubUrl, setGithubUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +29,22 @@ export default function SubmitUrlForm({ onJobCreated }: SubmitUrlFormProps) {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+      // Prepare request body with optional user data
+      const requestBody: any = { github_url: githubUrl };
+
+      // Include user info if authenticated
+      if (session?.user?.githubId) {
+        requestBody.github_id = session.user.githubId;
+        requestBody.access_token = session.accessToken;
+      }
+
       const response = await fetch(`${apiUrl}/api/v1/jobs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ github_url: githubUrl }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

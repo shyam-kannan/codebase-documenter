@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = ""
     AWS_REGION: str = "us-east-1"
 
+    # Security
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+
     class Config:
         env_file = "../.env"
         case_sensitive = True

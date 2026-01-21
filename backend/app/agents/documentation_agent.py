@@ -20,6 +20,7 @@ class AgentState(TypedDict):
     """State for the documentation agent workflow."""
     job_id: str
     github_url: str
+    access_token: Optional[str]
     repo_path: Optional[str]
     repo_metadata: Optional[Dict[str, Any]]
     file_tree: Optional[Dict[str, Any]]
@@ -90,7 +91,11 @@ class DocumentationAgent:
         logger.info(f"[Job {state['job_id']}] Step 1: Cloning repository {state['github_url']}")
         state["current_step"] = "cloning"
 
-        result = clone_repository(state["github_url"], state["job_id"])
+        result = clone_repository(
+            state["github_url"],
+            state["job_id"],
+            access_token=state.get("access_token")
+        )
 
         if result["success"]:
             state["repo_path"] = result["repo_path"]
@@ -290,13 +295,14 @@ class DocumentationAgent:
         logger.info(f"[Job {state['job_id']}] Workflow completed with status: {state['status']}")
         return state
 
-    def run(self, job_id: str, github_url: str) -> Dict[str, Any]:
+    def run(self, job_id: str, github_url: str, access_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Run the documentation generation workflow.
 
         Args:
             job_id: The job ID
             github_url: The GitHub repository URL
+            access_token: Optional GitHub access token for private repositories
 
         Returns:
             Final state dictionary
@@ -307,6 +313,7 @@ class DocumentationAgent:
         initial_state = AgentState(
             job_id=job_id,
             github_url=github_url,
+            access_token=access_token,
             repo_path=None,
             repo_metadata=None,
             file_tree=None,

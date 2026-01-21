@@ -12,13 +12,14 @@ from git.exc import GitCommandError, InvalidGitRepositoryError
 logger = logging.getLogger(__name__)
 
 
-def clone_repository(github_url: str, job_id: str) -> Dict[str, Any]:
+def clone_repository(github_url: str, job_id: str, access_token: str = None) -> Dict[str, Any]:
     """
     Clone a GitHub repository to a local directory.
 
     Args:
         github_url: The GitHub repository URL
         job_id: The job ID (used for directory naming)
+        access_token: Optional GitHub access token for private repositories
 
     Returns:
         Dict containing:
@@ -39,10 +40,24 @@ def clone_repository(github_url: str, job_id: str) -> Dict[str, Any]:
             logger.info(f"Removing existing repository at {repo_path}")
             shutil.rmtree(repo_path)
 
+        # Construct clone URL with authentication if token provided
+        clone_url = github_url
+        if access_token:
+            # Parse the URL to inject the token
+            # Convert https://github.com/owner/repo.git to https://x-access-token:{token}@github.com/owner/repo.git
+            if github_url.startswith("https://github.com/"):
+                clone_url = github_url.replace(
+                    "https://github.com/",
+                    f"https://x-access-token:{access_token}@github.com/"
+                )
+                logger.info(f"Using authenticated clone for private repository")
+            else:
+                logger.warning(f"Access token provided but URL format not recognized: {github_url}")
+
         # Clone the repository
-        logger.info(f"Cloning repository {github_url} to {repo_path}")
+        logger.info(f"Cloning repository to {repo_path}")
         repo = git.Repo.clone_from(
-            github_url,
+            clone_url,
             repo_path,
             depth=1,  # Shallow clone for faster download
             single_branch=True,  # Only clone the default branch

@@ -5,10 +5,14 @@ import { useRouter } from "next/navigation";
 import SubmitUrlForm from "@/components/SubmitUrlForm";
 import JobStatus from "@/components/JobStatus";
 import AuthButton from "@/components/AuthButton";
+import { useBackendAuth } from "@/hooks/useBackendAuth";
 
 export default function Home() {
   const router = useRouter();
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+
+  // Sync NextAuth session with backend
+  useBackendAuth();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">

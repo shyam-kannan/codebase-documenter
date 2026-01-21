@@ -34,13 +34,14 @@ def get_s3_client():
         raise
 
 
-def upload_to_s3(file_path: str, job_id: str) -> Optional[str]:
+def upload_to_s3(file_path: str, job_id: str, key_prefix: str = "docs") -> Optional[str]:
     """
     Upload a documentation file to S3 and return the public URL.
 
     Args:
-        file_path: Path to the local markdown file
+        file_path: Path to the local file
         job_id: The job ID (used for S3 object key)
+        key_prefix: Prefix for the S3 object key (default: "docs")
 
     Returns:
         str: Public URL of the uploaded file, or None if upload failed
@@ -53,13 +54,22 @@ def upload_to_s3(file_path: str, job_id: str) -> Optional[str]:
         # Verify file exists
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"Documentation file not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         # Get S3 client
         s3_client = get_s3_client()
 
+        # Determine content type based on file extension
+        suffix = path.suffix.lower()
+        content_type_map = {
+            '.md': 'text/markdown',
+            '.json': 'application/json',
+            '.txt': 'text/plain',
+        }
+        content_type = content_type_map.get(suffix, 'application/octet-stream')
+
         # S3 object key (filename in bucket)
-        object_key = f"docs/{job_id}.md"
+        object_key = f"{key_prefix}/{job_id}{suffix}"
 
         # Upload the file
         logger.info(f"Uploading {file_path} to S3 bucket {settings.S3_BUCKET_NAME}")
@@ -69,12 +79,12 @@ def upload_to_s3(file_path: str, job_id: str) -> Optional[str]:
                 Bucket=settings.S3_BUCKET_NAME,
                 Key=object_key,
                 Body=file_data,
-                ContentType='text/markdown',
+                ContentType=content_type,
                 #ACL='public-read',
                 CacheControl='max-age=3600',  # Cache for 1 hour
                 Metadata={
                     'job-id': job_id,
-                    'content-type': 'documentation'
+                    'content-type': key_prefix
                 }
             )
 
