@@ -1,144 +1,313 @@
-# Codebase Documentation System
+# RepoFriend - AI-Powered GitHub Documentation Generator
 
-An AI-powered full-stack application that automatically generates comprehensive documentation from GitHub repositories using Claude Sonnet 4, LangGraph workflows, and intelligent code analysis.
+> Transform any GitHub repository into comprehensive, professional documentation with a single click.
 
-## 🎉 Phase 3 Complete - S3 Storage & Documentation Viewer
+RepoFriend is a full-stack application that automatically analyzes GitHub repositories and generates intelligent, context-aware documentation using Claude AI. It supports both public and private repositories, with features including automated code comment generation, pull request creation, and cloud storage integration.
 
-The system now features:
-- 🤖 **AI-Powered Documentation**: Claude Sonnet 4 generates intelligent, context-aware documentation
-- 🔄 **LangGraph Workflows**: Multi-step agent orchestrates clone → scan → analyze → generate
-- ⚡ **Background Processing**: Celery workers handle jobs asynchronously
-- 📊 **Code Analysis**: Automatic extraction of classes, functions, and structure
-- ☁️ **S3 Cloud Storage**: Documentation automatically uploaded to Amazon S3
-- 🔗 **Public URLs**: Each job gets a shareable documentation link
-- 🎨 **Documentation Viewer**: Beautiful "View Documentation" button in UI
-- 🚀 **Production Ready**: Error handling, logging, and scalable architecture
+## ✨ Key Features
 
-## Project Structure
+- 🤖 **AI-Powered Documentation** - Claude Sonnet 4 generates comprehensive, human-readable documentation from repository analysis
+- 💬 **Intelligent Code Comments** - Automatically adds inline comments to your codebase and creates pull requests
+- 🔐 **Private Repository Support** - Full GitHub OAuth integration for accessing private repositories
+- ☁️ **Cloud Storage** - Documentation automatically uploaded to Amazon S3 with public URLs
+- 📊 **Real-Time Status Updates** - Live polling shows job progress from pending → processing → completed
+- 🎨 **Beautiful UI** - Modern Next.js interface with dark mode support
+- ⚡ **Background Processing** - Celery workers handle jobs asynchronously for optimal performance
+- 🔄 **LangGraph Workflows** - Multi-step AI agent orchestrates clone → scan → analyze → generate workflow
 
-```
-codebase-documenter/
-├── frontend/          # Next.js 14 frontend application
-├── backend/           # FastAPI backend application
-├── infrastructure/    # Docker and deployment configs
-├── docker-compose.yml # Docker Compose setup
-└── .env.example       # Environment variables template
-```
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
-- Next.js 14 with App Router
-- TypeScript
-- Tailwind CSS
-- React 18
+- **Next.js 14** with App Router and TypeScript
+- **NextAuth.js** for GitHub OAuth authentication
+- **Tailwind CSS** for styling with dark mode
+- **React Markdown** with syntax highlighting
+- **Framer Motion** for animations
 
 ### Backend
-- FastAPI (Python 3.11)
-- SQLAlchemy (ORM)
-- PostgreSQL (Database)
-- Redis (Task Queue)
-- Alembic (Migrations)
-- **Celery** (Background Jobs)
-- **LangGraph** (AI Workflow)
-- **Claude API** (Documentation Generation)
+- **FastAPI** (Python 3.11) for REST API
+- **LangGraph** for AI workflow orchestration
+- **Claude API (Anthropic)** for documentation generation
+- **Celery** for distributed background task processing
+- **SQLAlchemy** ORM with PostgreSQL
+- **GitPython** for repository cloning and analysis
+- **AST parsing** for code structure extraction
 
 ### Infrastructure
-- Docker & Docker Compose
-- PostgreSQL 15
-- Redis 7
-- **Amazon S3** (Cloud Storage)
+- **PostgreSQL 15** for database
+- **Redis 7** for task queue and caching
+- **Amazon S3** for cloud storage
+- **Docker & Docker Compose** for containerization
 
-## Prerequisites
+## 📋 Prerequisites
 
-- Docker and Docker Compose
-- Node.js 18+ (for local frontend development)
-- Python 3.11+ (for local backend development)
-- **Anthropic API Key** (for AI documentation generation) - Get one at https://console.anthropic.com/
-- **AWS Account** (for S3 storage - optional but recommended) - Sign up at https://aws.amazon.com/
+Before you begin, ensure you have the following:
 
-## Quick Start
+- **Docker** and **Docker Compose** installed
+- **Node.js 18+** (for local frontend development)
+- **Python 3.11+** (for local backend development)
+- **Anthropic API Key** - Get one at [https://console.anthropic.com/](https://console.anthropic.com/)
+- **AWS Account** (for S3 storage) - Sign up at [https://aws.amazon.com/](https://aws.amazon.com/)
+- **GitHub OAuth App** (for private repo access):
+  1. Go to GitHub Settings → Developer settings → OAuth Apps
+  2. Create a new OAuth App
+  3. Set callback URL to `http://localhost:3000/api/auth/callback/github`
+  4. Note the Client ID and Client Secret
 
-### Phase 1 & 2 Setup
+## 🚀 Installation
 
-### 1. Clone and Setup Environment
+### 1. Clone the Repository
 
 ```bash
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env and add your Anthropic API key
-# ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+git clone https://github.com/yourusername/codebase-documenter.git
+cd codebase-documenter
 ```
 
-### 2. Start All Services with Docker
+### 2. Environment Variables Setup
+
+#### Backend Environment Variables
+
+Create a `.env` file in the root directory:
+
+```bash
+# Anthropic API (Required)
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+
+# AWS S3 (Required for document storage)
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your-bucket-name
+
+# GitHub OAuth (Required for private repos)
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_TOKEN=ghp_your-personal-access-token
+
+# Database
+DATABASE_URL=postgresql://codebase_user:codebase_password@postgres:5432/codebase_db
+POSTGRES_USER=codebase_user
+POSTGRES_PASSWORD=codebase_password
+POSTGRES_DB=codebase_db
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# API Configuration
+CORS_ORIGINS=http://localhost:3000
+```
+
+#### Frontend Environment Variables
+
+Create a `.env.local` file in the `frontend/` directory:
+
+```bash
+# NextAuth Configuration
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-random-secret-here  # Generate with: openssl rand -base64 32
+
+# GitHub OAuth (same credentials as backend)
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Backend API
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### 3. Start Backend Services with Docker
 
 ```bash
 # Build and start all services (PostgreSQL, Redis, Backend, Celery Worker)
 docker-compose up -d --build
 
-# Check services are running (should see 4 services)
+# Verify all services are running
 docker-compose ps
 
 # Expected output:
 # ✓ codebase_postgres (healthy)
 # ✓ codebase_redis (healthy)
-# ✓ codebase_backend (running)
+# ✓ codebase_backend (running on port 8000)
 # ✓ codebase_celery_worker (running)
-
-# View backend logs
-docker-compose logs -f backend
-
-# View Celery worker logs
-docker-compose logs -f celery_worker
 ```
 
-The backend API will be available at http://localhost:8000
+The backend API will be available at:
+- **API**: [http://localhost:8000](http://localhost:8000)
+- **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-API Documentation: http://localhost:8000/docs
-
-**🎉 AI Documentation is now active!** Submit a GitHub URL and watch as the system:
-1. Clones the repository
-2. Scans the file structure
-3. Analyzes the code
-4. Generates comprehensive documentation with Claude AI
-
-### 3. Setup Frontend
+### 4. Start Frontend Development Server
 
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-The frontend will be available at http://localhost:3000
+The frontend will be available at [http://localhost:3000](http://localhost:3000)
 
-## Development
+## 📖 Usage
+
+### Generating Documentation
+
+1. **Sign in** with your GitHub account
+2. **Enter a repository URL** (e.g., `https://github.com/anthropics/anthropic-sdk-python`)
+3. **Choose options**:
+   - Generate documentation only
+   - Generate documentation + AI comments (creates a PR)
+4. **Monitor progress** in real-time as the job processes
+5. **View results** once complete:
+   - Read documentation in the browser
+   - Download as PDF
+   - View commented code (if selected)
+   - Access the GitHub pull request
+
+### From Saved Documentation
+
+After generating documentation, you can:
+
+- **View all saved documentation** from the "Saved Docs" page
+- **Generate AI comments later** if you didn't select it initially
+- **Download documentation** as PDF at any time
+- **Share documentation URLs** (stored in S3)
+
+## 🏗️ Project Structure
+
+```
+codebase-documenter/
+├── frontend/                 # Next.js frontend application
+│   ├── src/
+│   │   ├── app/             # Next.js 14 App Router pages
+│   │   │   ├── dashboard/   # Main documentation generation page
+│   │   │   ├── documentation/[jobId]/  # Documentation viewer
+│   │   │   ├── saved-documentation/    # Saved docs list
+│   │   │   └── commented-code/[jobId]/ # Code with comments viewer
+│   │   ├── components/      # React components
+│   │   │   ├── SubmitUrlForm.tsx
+│   │   │   └── JobStatus.tsx
+│   │   └── hooks/           # Custom React hooks
+│   └── package.json
+├── backend/                 # FastAPI backend application
+│   ├── app/
+│   │   ├── api/v1/         # API endpoints
+│   │   │   ├── jobs.py     # Job management endpoints
+│   │   │   └── auth.py     # Authentication endpoints
+│   │   ├── models/         # SQLAlchemy models
+│   │   │   └── job.py
+│   │   ├── tools/          # AI tools and utilities
+│   │   │   ├── doc_generator.py      # Documentation generation
+│   │   │   ├── code_commenter.py     # Code comment generation
+│   │   │   └── repository_analyzer.py # Code analysis
+│   │   ├── workflows/      # LangGraph workflow definitions
+│   │   │   └── doc_workflow.py
+│   │   ├── core/           # Core configuration
+│   │   │   ├── config.py
+│   │   │   └── database.py
+│   │   ├── celery_app.py   # Celery configuration
+│   │   └── main.py         # FastAPI application entry
+│   ├── alembic/            # Database migrations
+│   ├── requirements.txt
+│   └── Dockerfile
+├── docker-compose.yml      # Docker services orchestration
+└── README.md
+```
+
+## 🔗 API Endpoints
+
+### Jobs API
+
+#### `POST /api/v1/jobs`
+Create a new documentation generation job.
+
+**Request Body:**
+```json
+{
+  "github_url": "https://github.com/owner/repo",
+  "add_comments": false  // Optional: generate AI comments
+}
+```
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "github_url": "https://github.com/owner/repo",
+  "status": "pending",
+  "documentation_url": null,
+  "created_at": "2024-01-21T12:00:00Z"
+}
+```
+
+#### `GET /api/v1/jobs/{job_id}`
+Get job status and details.
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "github_url": "https://github.com/owner/repo",
+  "status": "completed",
+  "documentation_url": "https://s3.amazonaws.com/bucket/docs/uuid.md",
+  "commented_code_url": "https://s3.amazonaws.com/bucket/code/uuid.md",
+  "pull_request_url": "https://github.com/owner/repo/pull/123",
+  "created_at": "2024-01-21T12:00:00Z",
+  "updated_at": "2024-01-21T12:02:30Z"
+}
+```
+
+#### `GET /api/v1/jobs/{job_id}/documentation`
+Retrieve the generated documentation (proxies S3).
+
+#### `POST /api/v1/jobs/{job_id}/add-comments`
+Trigger AI comment generation for an existing job.
+
+### Authentication API
+
+#### `POST /api/v1/auth/github`
+Exchange GitHub OAuth code for backend session.
+
+**Request Body:**
+```json
+{
+  "access_token": "gho_github_access_token"
+}
+```
+
+## 🔧 Development
 
 ### Backend Development
 
-#### Run migrations
+#### Run Database Migrations
 
 ```bash
-# Create new migration
+# Create a new migration
 docker-compose exec backend alembic revision --autogenerate -m "description"
 
 # Apply migrations
 docker-compose exec backend alembic upgrade head
+
+# Rollback migration
+docker-compose exec backend alembic downgrade -1
 ```
 
-#### Access database
+#### Access Database
 
 ```bash
 docker-compose exec postgres psql -U codebase_user -d codebase_db
 ```
 
-#### Run tests
+#### View Logs
+
+```bash
+# All services
+docker-compose logs -f
+
+# Backend API only
+docker-compose logs -f backend
+
+# Celery worker (shows AI workflow progress)
+docker-compose logs -f celery_worker
+```
+
+#### Run Tests
 
 ```bash
 cd backend
@@ -150,327 +319,144 @@ pytest
 ```bash
 cd frontend
 
-# Run development server
+# Run development server with hot reload
 npm run dev
 
 # Build for production
 npm run build
 
-# Run production build
+# Run production build locally
 npm start
 
 # Lint code
 npm run lint
+
+# Type check
+npm run type-check
 ```
 
-## How It Works (Phase 2 Workflow)
+## 🐛 Troubleshooting
 
-When you submit a GitHub repository:
+### Jobs Stuck in Pending
 
-```
-1. 📝 Job Created → Status: "pending"
-   ↓
-2. 🔄 Celery Task Queued
-   ↓
-3. 👷 Worker Picks Up Task → Status: "processing"
-   ↓
-4. 🤖 LangGraph Agent Workflow:
-   ├─ Clone repository with GitPython
-   ├─ Scan directory structure
-   ├─ Analyze code (Python/JS)
-   ├─ Generate docs with Claude AI
-   ├─ Save to /tmp/docs/{job_id}.md
-   └─ Cleanup temporary files
-   ↓
-5. ✅ Status: "completed" (or "failed" with error)
-```
+**Symptoms**: Jobs created but never progress to "processing"
 
-Total time: 30 seconds - 5 minutes depending on repository size.
-
-## API Endpoints
-
-### POST /api/v1/jobs
-Submit a GitHub repository URL for AI-powered documentation generation.
-
-**Request Body:**
-```json
-{
-  "github_url": "https://github.com/owner/repo"
-}
-```
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "github_url": "https://github.com/owner/repo",
-  "status": "pending",
-  "created_at": "2024-01-19T12:00:00Z"
-}
-```
-
-**What happens next:**
-- Celery task is queued immediately
-- Worker processes job in background
-- Status changes: pending → processing → completed
-
-### GET /api/v1/jobs/{job_id}
-Check the status of a documentation job.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "github_url": "https://github.com/owner/repo",
-  "status": "processing",
-  "created_at": "2024-01-19T12:00:00Z",
-  "updated_at": "2024-01-19T12:01:00Z"
-}
-```
-
-## Database Schema
-
-### jobs table
-- `id` (UUID, Primary Key)
-- `github_url` (String, Unique)
-- `status` (Enum: pending, processing, completed, failed)
-- `error_message` (String, Nullable)
-- `created_at` (DateTime)
-- `updated_at` (DateTime)
-
-**Status Flow:**
-- `pending` - Job created, waiting for worker
-- `processing` - Worker is generating documentation
-- `completed` - Documentation ready (/tmp/docs/{job_id}.md)
-- `failed` - Error occurred (check error_message)
-
-## Environment Variables
-
-Key environment variables (see `.env.example` for all):
-
+**Solution**:
 ```bash
-# Required for Phase 2
-ANTHROPIC_API_KEY=sk-ant-api03-your-key-here  # Get from https://console.anthropic.com/
+# Check Celery worker is running
+docker-compose ps celery_worker
 
-# Database
-DATABASE_URL=postgresql://codebase_user:codebase_password@postgres:5432/codebase_db
-
-# Redis (Task Queue)
-REDIS_URL=redis://redis:6379/0
-
-# CORS
-CORS_ORIGINS=http://localhost:3000
-```
-
-## Phase 2 Documentation
-
-Comprehensive guides for Phase 2:
-
-- **[PHASE2_QUICKSTART.md](PHASE2_QUICKSTART.md)** - Get Phase 2 running in 5 minutes
-- **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Complete Phase 2 documentation
-- **[PHASE2_TESTING.md](PHASE2_TESTING.md)** - Testing guide for all components
-- **[API_EXAMPLES.md](API_EXAMPLES.md)** - API request/response examples
-
-## Monitoring & Logs
-
-### View Logs
-
-```bash
-# Celery worker (shows AI workflow progress)
-docker-compose logs -f celery_worker
-
-# Backend API
-docker-compose logs -f backend
-
-# All services
-docker-compose logs -f
-```
-
-### Check Job Status
-
-```bash
-# Via API
-curl http://localhost:8000/api/v1/jobs/{job_id}
-
-# Via database
-docker-compose exec postgres psql -U codebase_user -d codebase_db \
-  -c "SELECT id, status, error_message FROM jobs ORDER BY created_at DESC LIMIT 10;"
-```
-
-### View Generated Documentation
-
-```bash
-# Access worker container
-docker-compose exec celery_worker bash
-
-# View documentation
-cat /tmp/docs/{job_id}.md
-
-# List all generated docs
-ls -lh /tmp/docs/
-```
-
-## Troubleshooting
-
-### Celery Worker Not Starting
-```bash
-# Check logs
+# View worker logs for errors
 docker-compose logs celery_worker
-
-# Verify Redis connection
-docker-compose exec celery_worker python -c "from app.celery_app import celery_app; print('OK')"
 
 # Restart worker
 docker-compose restart celery_worker
 ```
 
 ### API Key Issues
-```bash
-# Check API key is set
-docker-compose exec backend env | grep ANTHROPIC
 
-# Verify key is valid
-docker-compose exec backend python -c "from anthropic import Anthropic; Anthropic(); print('Valid')"
+**Symptoms**: Jobs fail with "API key invalid" or "Anthropic API error"
+
+**Solution**:
+```bash
+# Verify API key is set
+docker-compose exec backend env | grep ANTHROPIC_API_KEY
+
+# Test API key validity
+docker-compose exec backend python -c "from anthropic import Anthropic; client = Anthropic(); print('API key is valid')"
 ```
 
-### Jobs Stuck in Pending
+### S3 Upload Failures
+
+**Symptoms**: Documentation completes but no S3 URL
+
+**Solution**:
 ```bash
-# Check worker is running
-docker-compose ps celery_worker
+# Check AWS credentials
+docker-compose exec backend env | grep AWS
 
-# Check Redis queue
-docker-compose exec redis redis-cli LLEN celery
-
-# Restart worker
-docker-compose restart celery_worker
+# Verify S3 bucket access
+docker-compose exec backend python -c "import boto3; s3 = boto3.client('s3'); print(s3.list_buckets())"
 ```
 
-### Backend won't start
+### Port Already in Use
+
+**Symptoms**: Docker fails to start with "port is already allocated"
+
+**Solution**:
 ```bash
-# Check logs
-docker-compose logs backend
+# Stop all containers
+docker-compose down
 
-# Rebuild
-docker-compose up -d --build backend
+# Find process using port 8000 (Windows)
+netstat -ano | findstr :8000
 
-# Rebuild backend
-docker-compose up -d --build backend
+# Find process using port 8000 (Mac/Linux)
+lsof -i :8000
+
+# Kill the process or change port in docker-compose.yml
 ```
 
-### Database connection issues
+### Database Connection Issues
+
+**Symptoms**: Backend can't connect to PostgreSQL
+
+**Solution**:
 ```bash
 # Check PostgreSQL is running
 docker-compose ps postgres
 
-# Check database logs
+# View database logs
 docker-compose logs postgres
+
+# Restart database
+docker-compose restart postgres
+
+# Reset database (WARNING: deletes all data)
+docker-compose down -v
+docker-compose up -d
 ```
 
-### Port already in use
-```bash
-# Stop all services
-docker-compose down
+## 💰 Cost Considerations
 
-# Check what's using the port
-# On Windows:
-netstat -ano | findstr :8000
-# On Mac/Linux:
-lsof -i :8000
-```
+### Claude API Usage
 
-## Example Repositories to Try
+Each documentation job costs approximately:
+- **Small repo** (~50 files): $0.05 - $0.10
+- **Medium repo** (~200 files): $0.15 - $0.30
+- **Large repo** (~500+ files): $0.40 - $0.80
 
-Start with these to test the system:
+Monitor usage at: [https://console.anthropic.com/](https://console.anthropic.com/)
 
-### Small & Fast (30-60 seconds)
-```bash
-curl -X POST http://localhost:8000/api/v1/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"github_url": "https://github.com/anthropics/anthropic-sdk-python"}'
-```
+### AWS S3 Storage
 
-### Medium (1-2 minutes)
-```bash
-curl -X POST http://localhost:8000/api/v1/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"github_url": "https://github.com/pallets/flask"}'
-```
+- **Storage**: ~$0.023 per GB/month
+- **Requests**: ~$0.005 per 1,000 PUT requests
+- **Data transfer**: Free for first 100 GB/month
 
-### Large (2-5 minutes)
-```bash
-curl -X POST http://localhost:8000/api/v1/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"github_url": "https://github.com/django/django"}'
-```
+Average documentation file: 50-200 KB
 
-## Architecture Overview
+## 📚 Additional Documentation
 
-### Phase 2 Components
+For more detailed technical information, see:
 
-```
-Frontend (Next.js)
-       ↓ HTTP
-FastAPI Backend
-       ↓ Queue Task
-Redis (Broker)
-       ↓ Dequeue
-Celery Worker
-       ↓ Execute
-LangGraph Agent
-       ├─ Clone (GitPython)
-       ├─ Scan (File Analysis)
-       ├─ Analyze (AST/Regex)
-       └─ Generate (Claude API)
-       ↓
-Documentation Output
-```
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Architecture, development phases, and technical details
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guidelines for contributing to the project *(coming soon)*
 
-### Key Technologies
+## 🤝 Contributing
 
-- **LangGraph**: Workflow orchestration
-- **Celery**: Distributed task queue
-- **Claude Sonnet 4**: AI documentation generation
-- **GitPython**: Repository cloning
-- **AST/Regex**: Code structure extraction
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Cost Considerations
+## 📄 License
 
-Each job costs approximately:
-- **Input tokens**: 3,000-8,000
-- **Output tokens**: 2,000-5,000
-- **Total cost**: ~$0.05-0.15 per repository
+MIT License - see LICENSE file for details
 
-Monitor usage at: https://console.anthropic.com/
+## 🙏 Acknowledgments
 
-## Project Phases
+- Built with [Claude](https://www.anthropic.com/claude) by Anthropic
+- Powered by [LangGraph](https://github.com/langchain-ai/langgraph) for AI workflows
+- UI inspired by modern developer tools
 
-### ✅ Phase 1 - Complete
-- Frontend UI with Next.js
-- Backend API with FastAPI
-- Database with PostgreSQL
-- Job tracking system
+---
 
-### ✅ Phase 2 - Complete
-- **AI Documentation Generation** with Claude
-- **LangGraph Workflow** orchestration
-- **Celery Background Processing**
-- **Code Analysis** (Python/JavaScript)
-- **Error Handling** & logging
-
-### 🔜 Phase 3 - Planned
-- S3 storage for documentation
-- Documentation viewer in frontend
-- Advanced code analysis (more languages)
-- Webhooks & notifications
-- User authentication
-- Rate limiting
-- Caching & optimization
-
-## Next Steps (Phase 3+)
-- Implement LLM-based documentation generation
-- Add authentication and user management
-- Deploy to production environment
-
-## License
-
-MIT
+**Questions or Issues?** Open an issue on GitHub or reach out to the maintainers.
