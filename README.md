@@ -447,16 +447,6 @@ For more detailed technical information, see:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Built with [Claude](https://www.anthropic.com/claude) by Anthropic
-- Powered by [LangGraph](https://github.com/langchain-ai/langgraph) for AI workflows
-- UI inspired by modern developer tools
-
 ---
 
 **Questions or Issues?** Open an issue on GitHub or reach out to the maintainers.
