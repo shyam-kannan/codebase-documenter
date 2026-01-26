@@ -4,6 +4,9 @@
 
 RepoFriend is a full-stack application that automatically analyzes GitHub repositories and generates intelligent, context-aware documentation using Claude AI. It supports both public and private repositories, with features including automated code comment generation, pull request creation, and cloud storage integration.
 
+
+[Watch Demo →]([https://www.loom.com/share/YOUR_LOOM_ID](https://www.loom.com/share/18786b7a779148f9b7bf17962eae25cb))
+
 ## ✨ Key Features
 
 - 🤖 **AI-Powered Documentation** - Claude Sonnet 4 generates comprehensive, human-readable documentation from repository analysis
