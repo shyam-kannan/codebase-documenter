@@ -7,7 +7,9 @@ RepoFriend is a full-stack application that automatically analyzes GitHub reposi
 
 ## 🎥 Demo Video
 
-[![Watch Demo](https://cdn.loom.com/sessions/thumbnails/18786b7a779148f9b7bf17962eae25cb-with-play.gif)](https://www.loom.com/share/18786b7a779148f9b7bf17962eae25cb)
+[![Watch Demo](demoImage.png)](https://www.loom.com/share/18786b7a779148f9b7bf17962eae25cb)
+
+Click to watch the full demo!
 
 
 ## ✨ Key Features
